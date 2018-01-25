@@ -41,14 +41,12 @@ import java.util.Vector;
 public class HazelcastDBClient extends DB {
 
   private HazelcastInstance hz;
-  private boolean indexCreated = false;
 
   public void init() throws DBException {
     try {
       ClientConfig config = new XmlClientConfigBuilder().build();
       config.getUserCodeDeploymentConfig().addClass(UpdateEP.class).setEnabled(true);
       hz = HazelcastClient.newHazelcastClient(config);
-      //TODO get table name & create index once !!! (Need to be static)
     } catch (Exception e) {
       throw new DBException(e);
     }
@@ -56,13 +54,6 @@ public class HazelcastDBClient extends DB {
 
   public void cleanup() {
     hz.shutdown();
-  }
-
-  private void createIndex(String table) {
-    if(!indexCreated) {
-      hz.getMap(table).addIndex("__key", true);
-      indexCreated = true;
-    }
   }
 
   @Override
@@ -82,7 +73,6 @@ public class HazelcastDBClient extends DB {
   @Override
   public Status scan(String table, String startkey, int recordcount, Set<String> fields,
                      Vector<HashMap<String, ByteIterator>> result) {
-    createIndex(table);
     PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
     hz.getMap(table).values(pp);
     return Status.OK;
@@ -90,14 +80,12 @@ public class HazelcastDBClient extends DB {
 
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    createIndex(table);
     hz.getMap(table).executeOnKey(key, new UpdateEP(StringByteIterator.getStringMap(values)));
     return Status.OK;
   }
 
   @Override
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
-    createIndex(table);
     hz.getMap(table).set(key, StringByteIterator.getStringMap(values));
     return Status.OK;
   }
