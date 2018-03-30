@@ -30,7 +30,8 @@ import com.yahoo.ycsb.DBException;
 import com.yahoo.ycsb.Status;
 import com.yahoo.ycsb.StringByteIterator;
 
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 
 import java.util.HashMap;
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.util.HashSet;
 
 /**
  * YCSB binding for <a href="http://redis.io/">Redis</a>.
@@ -48,7 +50,7 @@ import java.util.Vector;
  */
 public class RedisClient extends DB {
 
-  private Jedis jedis;
+  private JedisCluster jedis;
 
   public static final String HOST_PROPERTY = "redis.host";
   public static final String PORT_PROPERTY = "redis.port";
@@ -68,8 +70,10 @@ public class RedisClient extends DB {
     }
     String host = props.getProperty(HOST_PROPERTY);
 
-    jedis = new Jedis(host, port);
-    jedis.connect();
+    Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
+    jedisClusterNodes.add(new HostAndPort(host, port));
+
+    jedis = new JedisCluster(jedisClusterNodes);
 
     String password = props.getProperty(PASSWORD_PROPERTY);
     if (password != null) {
@@ -78,7 +82,6 @@ public class RedisClient extends DB {
   }
 
   public void cleanup() throws DBException {
-    jedis.disconnect();
   }
 
   /*
@@ -95,7 +98,7 @@ public class RedisClient extends DB {
 
   @Override
   public Status read(String table, String key, Set<String> fields,
-      Map<String, ByteIterator> result) {
+                     Map<String, ByteIterator> result) {
     if (fields == null) {
       StringByteIterator.putAllAsByteIterators(result, jedis.hgetAll(key));
     } else {
@@ -117,7 +120,7 @@ public class RedisClient extends DB {
 
   @Override
   public Status insert(String table, String key,
-      Map<String, ByteIterator> values) {
+                       Map<String, ByteIterator> values) {
     if (jedis.hmset(key, StringByteIterator.getStringMap(values))
         .equals("OK")) {
       jedis.zadd(INDEX_KEY, hash(key), key);
@@ -134,14 +137,14 @@ public class RedisClient extends DB {
 
   @Override
   public Status update(String table, String key,
-      Map<String, ByteIterator> values) {
+                       Map<String, ByteIterator> values) {
     return jedis.hmset(key, StringByteIterator.getStringMap(values))
         .equals("OK") ? Status.OK : Status.ERROR;
   }
 
   @Override
   public Status scan(String table, String startkey, int recordcount,
-      Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+                     Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
     Set<String> keys = jedis.zrangeByScore(INDEX_KEY, hash(startkey),
         Double.POSITIVE_INFINITY, 0, recordcount);
 
