@@ -80,7 +80,8 @@ public class HazelcastDBClient extends DB {
 
   @Override
   public Status update(String table, String key, Map<String, ByteIterator> values) {
-    hz.getMap(table).executeOnKey(key, new UpdateEP(StringByteIterator.getStringMap(values)));
+//    hz.getMap(table).executeOnKey(key, new UpdateEP(StringByteIterator.getStringMap(values)));
+    hz.getMap(table).set(key,StringByteIterator.getStringMap(values));
     return Status.OK;
   }
 
