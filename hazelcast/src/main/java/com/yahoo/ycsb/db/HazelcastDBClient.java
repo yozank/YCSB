@@ -45,7 +45,7 @@ public class HazelcastDBClient extends DB {
   public void init() throws DBException {
     try {
       ClientConfig config = new XmlClientConfigBuilder().build();
-      config.getUserCodeDeploymentConfig().addClass(UpdateEP.class).setEnabled(true);
+//      config.getUserCodeDeploymentConfig().addClass(UpdateEP.class).setEnabled(true);
       hz = HazelcastClient.newHazelcastClient(config);
     } catch (Exception e) {
       throw new DBException(e);
