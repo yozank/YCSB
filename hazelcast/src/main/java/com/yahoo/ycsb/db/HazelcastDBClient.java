@@ -21,8 +21,11 @@ import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.hazelcast.query.PagingPredicate;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
+import com.hazelcast.query.SqlPredicate;
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
@@ -30,10 +33,7 @@ import com.yahoo.ycsb.Status;
 import com.yahoo.ycsb.StringByteIterator;
 
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * This is a client implementation for Hazelcast 3.x.
@@ -73,8 +73,19 @@ public class HazelcastDBClient extends DB {
   @Override
   public Status scan(String table, String startkey, int recordcount, Set<String> fields,
                      Vector<HashMap<String, ByteIterator>> result) {
-    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
-    hz.getMap(table).values(pp);
+
+    Predicate predicate = Predicates.and(Predicates.greaterEqual("__key", startkey), Predicates.lessThan("__key", Integer.parseInt(startkey) + recordcount));
+    IMap<String, Map<String, String> > map = hz.getMap(table);
+    Set<Map.Entry<String, Map<String, String>>> entries = map.entrySet(predicate);
+    if(fields == null || fields.isEmpty()) {
+      for(Map.Entry<String, Map<String, String>> entry : entries) {
+        result.add((HashMap<String, ByteIterator>)StringByteIterator.getByteIteratorMap( entry.getValue()));
+      }
+    } else {
+       //
+    }
+
+
     return Status.OK;
   }
 
