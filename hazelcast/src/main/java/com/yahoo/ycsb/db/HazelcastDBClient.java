@@ -23,6 +23,7 @@ import com.hazelcast.client.config.XmlClientConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.PagingPredicate;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
@@ -75,18 +76,21 @@ public class HazelcastDBClient extends DB {
 //    Predicate predicate = Predicates.and(Predicates.greaterEqual("__key", startkey),
 //        Predicates.lessThan("__key", Integer.parseInt(startkey) + recordcount));
 
-    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
+//    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
+//
+//    IMap<String, Map<String, String> > map = hz.getMap(table);
+//    Set<Map.Entry<String, Map<String, String>>> entries = map.entrySet(pp);
+//    if(fields == null || fields.isEmpty()) {
+//      for(Map.Entry<String, Map<String, String>> entry : entries) {
+//        result.add((HashMap<String, ByteIterator>)StringByteIterator.getByteIteratorMap(entry.getValue()));
+//      }
+//    } else {
+//       //
+//    }
 
-    IMap<String, Map<String, String> > map = hz.getMap(table);
-    Set<Map.Entry<String, Map<String, String>>> entries = map.entrySet(pp);
-    if(fields == null || fields.isEmpty()) {
-      for(Map.Entry<String, Map<String, String>> entry : entries) {
-        result.add((HashMap<String, ByteIterator>)StringByteIterator.getByteIteratorMap(entry.getValue()));
-      }
-    } else {
-       //
-    }
-
+//    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
+    Predicate predicate = Predicates.greaterEqual("__key", startkey);
+    hz.getMap(table).values(predicate);
 
     return Status.OK;
   }
