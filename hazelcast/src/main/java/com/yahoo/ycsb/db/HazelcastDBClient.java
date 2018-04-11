@@ -72,12 +72,13 @@ public class HazelcastDBClient extends DB {
   public Status scan(String table, String startkey, int recordcount, Set<String> fields,
                      Vector<HashMap<String, ByteIterator>> result) {
 
-    Predicate predicate = Predicates.and(Predicates.greaterEqual("__key", startkey), Predicates.lessThan("__key", Integer.parseInt(startkey) + recordcount));
+    Predicate predicate = Predicates.and(Predicates.greaterEqual("__key", startkey),
+        Predicates.lessThan("__key", Integer.parseInt(startkey) + recordcount));
     IMap<String, Map<String, String> > map = hz.getMap(table);
     Set<Map.Entry<String, Map<String, String>>> entries = map.entrySet(predicate);
     if(fields == null || fields.isEmpty()) {
       for(Map.Entry<String, Map<String, String>> entry : entries) {
-        result.add((HashMap<String, ByteIterator>)StringByteIterator.getByteIteratorMap( entry.getValue()));
+        result.add((HashMap<String, ByteIterator>)StringByteIterator.getByteIteratorMap(entry.getValue()));
       }
     } else {
        //
