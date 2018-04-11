@@ -22,7 +22,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.query.Predicate;
+import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicates;
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
@@ -72,10 +72,13 @@ public class HazelcastDBClient extends DB {
   public Status scan(String table, String startkey, int recordcount, Set<String> fields,
                      Vector<HashMap<String, ByteIterator>> result) {
 
-    Predicate predicate = Predicates.and(Predicates.greaterEqual("__key", startkey),
-        Predicates.lessThan("__key", Integer.parseInt(startkey) + recordcount));
+//    Predicate predicate = Predicates.and(Predicates.greaterEqual("__key", startkey),
+//        Predicates.lessThan("__key", Integer.parseInt(startkey) + recordcount));
+
+    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
+
     IMap<String, Map<String, String> > map = hz.getMap(table);
-    Set<Map.Entry<String, Map<String, String>>> entries = map.entrySet(predicate);
+    Set<Map.Entry<String, Map<String, String>>> entries = map.entrySet(pp);
     if(fields == null || fields.isEmpty()) {
       for(Map.Entry<String, Map<String, String>> entry : entries) {
         result.add((HashMap<String, ByteIterator>)StringByteIterator.getByteIteratorMap(entry.getValue()));
