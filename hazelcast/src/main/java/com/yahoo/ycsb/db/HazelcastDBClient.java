@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2012-2016 YCSB contributors. All rights reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
  * may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
@@ -21,7 +21,8 @@ import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.query.Predicate;
+import com.hazelcast.core.IMap;
+import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicates;
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
@@ -71,24 +72,25 @@ public class HazelcastDBClient extends DB {
   public Status scan(String table, String startkey, int recordcount, Set<String> fields,
                      Vector<HashMap<String, ByteIterator>> result) {
 
-//    Predicate predicate = Predicates.and(Predicates.greaterEqual("__key", startkey),
-//        Predicates.lessThan("__key", Integer.parseInt(startkey) + recordcount));
+    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
 
-//    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
-//
-//    IMap<String, Map<String, String> > map = hz.getMap(table);
-//    Set<Map.Entry<String, Map<String, String>>> entries = map.entrySet(pp);
-//    if(fields == null || fields.isEmpty()) {
-//      for(Map.Entry<String, Map<String, String>> entry : entries) {
-//        result.add((HashMap<String, ByteIterator>)StringByteIterator.getByteIteratorMap(entry.getValue()));
-//      }
-//    } else {
-//       //
-//    }
+    IMap<String, Map<String, String>> map = hz.getMap(table);
+    Set<String> keySet = map.keySet(pp);
 
-//    PagingPredicate pp = new PagingPredicate(Predicates.greaterEqual("__key", startkey), recordcount);
-    Predicate predicate = Predicates.greaterEqual("__key", startkey);
-    hz.getMap(table).values(predicate);
+    Map<String, Map<String, String>> entries = map.getAll(keySet);
+
+    for (Map.Entry<String, Map<String, String>> entry : entries.entrySet()) {
+      Map<String, String> data = entry.getValue();
+      if (fields == null || fields.isEmpty()) {
+        result.add((HashMap<String, ByteIterator>) StringByteIterator.getByteIteratorMap(data));
+      } else {
+        HashMap<String, ByteIterator> fieldMap = new HashMap<>();
+        for (String field : fields) {
+          fieldMap.put(field, new StringByteIterator(data.get(field)));
+        }
+        result.add(fieldMap);
+      }
+    }
 
     return Status.OK;
   }
